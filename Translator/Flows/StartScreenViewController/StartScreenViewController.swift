@@ -25,8 +25,7 @@ final class StartScreenViewController: BaseViewController<StartScreenViewControl
     private let buttonsConstraintGroup = ConstraintGroup()
     private let imageViewConstraintGroup = ConstraintGroup()
     
-    private let buttonsContainerHeight: CGFloat = 200
-    private let buttonsContainerWidth: CGFloat = 400
+    private let buttonsContainerSize = CGSize(width: 200, height: 100)
     private let speakerImageViewSize = CGSize(width: 250, height: 250)
     private let margin: CGFloat = 10
     
@@ -47,7 +46,7 @@ final class StartScreenViewController: BaseViewController<StartScreenViewControl
         super.viewDidAppear(animated)
         
         if viewModel.isFirstAppearance {
-            animateConstrains()
+            animateConstraints()
             viewModel.isFirstAppearance = false
         }
     }
@@ -89,8 +88,8 @@ final class StartScreenViewController: BaseViewController<StartScreenViewControl
                     return
                 }
                 container.centerX == view.centerX
-                container.width == self.buttonsContainerWidth
-                container.height == self.buttonsContainerHeight
+                container.width == self.buttonsContainerSize.width
+                container.height == self.buttonsContainerSize.height
                 container.top == view.bottom
             }
             
@@ -146,48 +145,36 @@ final class StartScreenViewController: BaseViewController<StartScreenViewControl
         self.buttonsContainer = buttonsContainer
     }
     
-    private func animateConstrains() {
-        constrain(loadingLabel, view, replace: labelConstraintGroup) { [weak self] (label, view) in
-            guard let self = self else {
-                return
-            }
-            label.centerX == view.centerX + self.margin
+    private func animateConstraints() {
+        UIView.animate(withDuration: 0.5, animations: { [weak self] in
+            self?.view.backgroundColor = UIColor.applicationGray.withAlphaComponent(0.3)
+        }) { [weak self] _ in
+            self?.setNewConstraints()
+
+            UIView.animate(withDuration: 1.5, animations: { [weak self] in
+                self?.view.layoutIfNeeded()
+            })
+        }
+    }
+    
+    private func setNewConstraints() {
+        guard let buttonsContainer = buttonsContainer else {
+            return
         }
         
-        UIView.animate(withDuration: 0.5, animations: { [weak self] in
+        constrain(loadingLabel, view, replace: labelConstraintGroup) { (label, view) in
+            label.right == view.left
+        }
+        
+        constrain(buttonsContainer, view, replace: buttonsConstraintGroup) { [weak self] (container, view) in
             guard let self = self else {
                 return
             }
             
-            self.backgroundImageView?.alpha = 1
-            self.view.layoutIfNeeded()
-        }) { [weak self] _ in
-            guard let self = self, let buttonsContainer = self.buttonsContainer else {
-                return
-            }
-            
-            constrain(self.loadingLabel, self.view, replace: self.labelConstraintGroup) { (label, view) in
-                label.right == view.left
-            }
-            
-            constrain(buttonsContainer, self.view, replace: self.buttonsConstraintGroup) { [weak self] (container, view) in
-                guard let self = self else {
-                    return
-                }
-                
-                container.bottom == view.bottom - self.margin
-                container.centerX == view.centerX
-                container.width == self.buttonsContainerWidth
-                container.height == self.buttonsContainerHeight
-            }
-            
-            UIView.animate(withDuration: 1.5, animations: { [weak self] in
-                guard let self = self else {
-                    return
-                }
-                
-                self.view.layoutIfNeeded()
-            })
+            container.bottom == view.bottom - self.margin
+            container.centerX == view.centerX
+            container.width == self.buttonsContainerSize.width
+            container.height == self.buttonsContainerSize.height
         }
     }
     
