@@ -13,11 +13,9 @@ final class StartScreenViewController: BaseViewController<StartScreenViewControl
     
     // MARK: Variables
     
-    @IBOutlet weak var loadingLabel: UILabel!
-    @IBOutlet weak var speakerImageView: UIImageView!
-
+    private var loadingLabel: UILabel?
+    private var speakerImageView: UIImageView?
     private var buttonsContainer: UIView?
-    private var backgroundImageView: UIImageView?
     private var startButton: TUIButton?
     private var historyButton: TUIButton?
     
@@ -30,7 +28,7 @@ final class StartScreenViewController: BaseViewController<StartScreenViewControl
     private let margin: CGFloat = 10
     
     private var loadingLabelWidth: CGFloat {
-        return loadingLabel.intrinsicContentSize.width
+        return loadingLabel?.intrinsicContentSize.width ?? 0
     }
     
     // MARK: Life cycle
@@ -47,7 +45,7 @@ final class StartScreenViewController: BaseViewController<StartScreenViewControl
         
         if viewModel.isFirstAppearance {
             animateConstraints()
-            viewModel.isFirstAppearance = false
+            viewModel.isFirstAppearance.toggle()
         }
     }
     
@@ -56,9 +54,10 @@ final class StartScreenViewController: BaseViewController<StartScreenViewControl
         
         if viewModel.isFirstAppearance {
             guard let buttonsContainer = buttonsContainer,
-                  let backgroundImageView = backgroundImageView,
                   let startButton = startButton,
-                  let historyButton = historyButton
+                  let historyButton = historyButton,
+                  let loadingLabel = loadingLabel,
+                  let speakerImageView = speakerImageView
             else {
                 return
             }
@@ -106,10 +105,6 @@ final class StartScreenViewController: BaseViewController<StartScreenViewControl
                 historyButton.bottom == container.bottom
                 historyButton.height == container.height / 2 - margin / 2
             }
-            
-            constrain(backgroundImageView, view) { (imageView, view) in
-                imageView.edges == view.edges
-            }
         }
     }
     
@@ -117,12 +112,17 @@ final class StartScreenViewController: BaseViewController<StartScreenViewControl
     
     private func configureView() {
         shouldHideNavigationBar = true
-        let backgroundImageView = UIImageView(image: UIImage(named: "mainScreenBackground"))
-        backgroundImageView.alpha = 0
-        view.addSubview(backgroundImageView)
-        view.sendSubviewToBack(backgroundImageView)
         
-        self.backgroundImageView = backgroundImageView
+        let loadingLabel = UILabel(text: "Loading")
+        let speakerImageView = UIImageView(image: UIImage(named: "mainScreenLogo"))
+        speakerImageView.contentMode = .scaleAspectFit
+        speakerImageView.clipsToBounds = true
+        
+        view.addSubview(loadingLabel)
+        view.addSubview(speakerImageView)
+        
+        self.loadingLabel = loadingLabel
+        self.speakerImageView = speakerImageView
     }
     
     private func configureButtons() {
@@ -158,7 +158,7 @@ final class StartScreenViewController: BaseViewController<StartScreenViewControl
     }
     
     private func setNewConstraints() {
-        guard let buttonsContainer = buttonsContainer else {
+        guard let buttonsContainer = buttonsContainer, let loadingLabel = loadingLabel else {
             return
         }
         
