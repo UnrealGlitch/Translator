@@ -14,10 +14,10 @@ Translator/
 |.|-UIComponents/  
 |.|-Other/    
 |-Flows/  
-|.|-StartScreenViewController/ (declarative autolayout (Cartography))
-|.|-TranslateViewController/ (manual layout (PinLayout))
-|.|-HistoryViewController/
-|-Extensions/
-|-Services/
-|.|-UserDefaultService/ 
+|.|-StartScreenViewController/ (declarative autolayout (Cartography))  
+|.|-TranslateViewController/ (manual layout (PinLayout))  
+|.|-HistoryViewController/  
+|-Extensions/  
+|-Services/  
+|.|-UserDefaultService/  
 |.|-DataSource/ (работа с сетью)
