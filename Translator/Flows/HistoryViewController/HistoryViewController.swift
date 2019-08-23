@@ -39,6 +39,10 @@ final class HistoryViewController: BaseViewController<HistoryViewControllerModel
 
 extension HistoryViewController: UITableViewDelegate {
     
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        viewModel.onCellSelection(at: indexPath.row)
+    }
+    
 }
 
 // MARK: UITableViewDataSource
@@ -57,6 +61,13 @@ extension HistoryViewController: UITableViewDataSource {
                                               translatedText: historyItem.translatedText,
                                               time: historyItem.time)
         return cell
+    }
+    
+    func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
+        if editingStyle == .delete {
+            viewModel.remove(at: indexPath.row)
+            tableView.reloadData()
+        }
     }
     
 }

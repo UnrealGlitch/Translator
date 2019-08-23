@@ -11,6 +11,8 @@ import RxCocoa
 
 protocol HistoryViewControllerModelOutput: class {
     
+    func onCellSelection(with data: HistoryTranslation)
+    
 }
 
 final class HistoryViewControllerModel: BaseViewModel {
@@ -33,6 +35,14 @@ final class HistoryViewControllerModel: BaseViewModel {
     
     func getHistoryItem(at index: Int) -> HistoryTranslation {
         return UserDefaultsService.instance.history[index]
+    }
+    
+    func onCellSelection(at index: Int) {
+        output?.onCellSelection(with: UserDefaultsService.instance.history[index])
+    }
+    
+    func remove(at index: Int) {
+        UserDefaultsService.instance.remove(at: index)
     }
     
 }

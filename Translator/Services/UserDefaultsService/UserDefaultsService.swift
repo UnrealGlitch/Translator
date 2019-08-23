@@ -13,6 +13,8 @@ struct HistoryTranslation: Codable {
     let time: String
     let text: String
     let translatedText: String
+    let originalLanguage: String
+    let targetLanguage: String
     
 }
 
@@ -43,10 +45,22 @@ final class UserDefaultsService {
     
     // MARK: Public
     
-    public func addTranslationToHistory(text: String, translatedText: String) {
-        let savingData = HistoryTranslation(time: currentTime, text: text, translatedText: translatedText)
+    public func addTranslationToHistory(text: String,
+                                        translatedText: String,
+                                        originalLanguage: String,
+                                        targetLanguage: String) {
+        let savingData = HistoryTranslation(time: currentTime,
+                                            text: text,
+                                            translatedText: translatedText,
+                                            originalLanguage: originalLanguage,
+                                            targetLanguage: targetLanguage)
         history.append(savingData)
         
+        UserDefaults.standard.set(try? PropertyListEncoder().encode(history), forKey: userDefaultsKey)
+    }
+    
+    public func remove(at index: Int) {
+        history.remove(at: index)
         UserDefaults.standard.set(try? PropertyListEncoder().encode(history), forKey: userDefaultsKey)
     }
     

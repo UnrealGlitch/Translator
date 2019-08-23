@@ -19,21 +19,43 @@ final class TranslateViewControllerModel: BaseViewModel {
     
     weak var output: TranslateViewControllerModelOutput?
     
+    let currentTranslation: HistoryTranslation?
+    
     private(set) var languages = BehaviorRelay<[String]>(value: [])
     private(set) var translatedText = BehaviorRelay<[String]>(value: [])
+    private(set) var autoDetectedLanguage = BehaviorRelay<String>(value: "")
     
     // MARK: Life cycle
     
-    init(output: TranslateViewControllerModelOutput) {
+    init(output: TranslateViewControllerModelOutput, currentTranslation: HistoryTranslation? = nil) {
         self.output = output
+        self.currentTranslation = currentTranslation
         
         getLanguagesRequest()
     }
     
     // MARK: Public
     
-    public func textViewDidChange(_ text: String) {
-        translateTextRequest(text)
+    public func textViewDidChange(_ text: String, from: String, to: String, autoResponseLanguage: Bool) {
+        if autoResponseLanguage {
+            DataSource.instance.detectLanguage(text: text) { [weak self] (language) in
+                guard let language = language else {
+                    return
+                }
+                
+                self?.autoDetectedLanguage.accept(language)
+                self?.translateTextRequest(text, attributes: "\(language)-\(to)")
+            }
+        } else {
+            translateTextRequest(text, attributes: "\(from)-\(to)")
+        }
+    }
+    
+    public func saveTranslationTOHistory(from: String, to: String, originalLanguage: String, targetLanguage: String) {
+        UserDefaultsService.instance.addTranslationToHistory(text: from,
+                                                             translatedText: to,
+                                                             originalLanguage: originalLanguage,
+                                                             targetLanguage: targetLanguage)
     }
     
     // MARK: Private
@@ -54,27 +76,13 @@ final class TranslateViewControllerModel: BaseViewModel {
         }
     }
     
-    //TODO: FRom to
-    private func translateTextRequest(_ text: String) {
-        DataSource.instance.translateText(text, language: "ru") { [weak self] (translatedText) in
+    private func translateTextRequest(_ text: String, attributes: String) {
+        DataSource.instance.translateText(text, language: attributes) { [weak self] (translatedText) in
             guard let translatedText = translatedText else {
                 return
             }
             self?.translatedText.accept(translatedText)
         }
     }
-    
-    //AAA
-    //    func loadTest() {
-    //        DataSource.instance.translateText("Hello", language: "ru") { (translatedText) in
-    //            print(translatedText)
-    //        }
-    //        DataSource.instance.getLanguages { (languages) in
-    //            print(languages)
-    //        }
-    //        DataSource.instance.detectLanguage(text: "TABLE") { (language) in
-    //            print(language)
-    //        }
-    //    }
     
 }

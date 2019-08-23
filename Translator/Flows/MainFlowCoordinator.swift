@@ -60,4 +60,10 @@ extension MainFlowCoordinator: TranslateViewControllerModelOutput {
 
 extension MainFlowCoordinator: HistoryViewControllerModelOutput {
     
+    func onCellSelection(with data: HistoryTranslation) {
+        let vm = TranslateViewControllerModel(output: self, currentTranslation: data)
+        let vc = TranslateViewController(viewModel: vm)
+        router?.push(vc)
+    }
+    
 }

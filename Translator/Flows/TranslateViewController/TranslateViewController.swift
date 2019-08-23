@@ -37,6 +37,8 @@ class TranslateViewController: BaseViewController<TranslateViewControllerModel> 
     private var originalPickerView: UIPickerView?
     private var targetPickerView: UIPickerView?
     
+    private var saveToHistoryButton: TUIButton?
+    
     private var originalPickerViewValue: String?
     private var targetPickerViewValue: String?
     
@@ -52,16 +54,18 @@ class TranslateViewController: BaseViewController<TranslateViewControllerModel> 
         super.viewDidLoad()
         
         configureView()
+        configureSwitcher()
         configureTextViews()
         configurePickers()
         configureClearButton()
+        configureHistoryButton()
         bind()
     }
     
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         
-        guard let textViews = textViews else {
+        guard let textViews = textViews, let saveToHistoryButton = saveToHistoryButton else {
             return
         }
         
@@ -96,9 +100,30 @@ class TranslateViewController: BaseViewController<TranslateViewControllerModel> 
             .width(pickerTextFieldWidth)
             .marginBottom(extendedMargin)
         
+        responseLanguageSwitch.pin
+            .above(of: fromLabel)
+            .left(margin)
+            .height(responseLanguageSwitch.intrinsicContentSize.height)
+            .width(responseLanguageSwitch.intrinsicContentSize.width)
+            .marginBottom(margin)
+        
+        responseLanguageLabel.pin
+            .above(of: fromLabel)
+            .after(of: responseLanguageSwitch)
+            .right()
+            .marginLeft(margin)
+            .marginBottom(margin + responseLanguageSwitch.intrinsicContentSize.height / 4)
+        
+        saveToHistoryButton.pin
+            .above(of: responseLanguageSwitch)
+            .left(margin)
+            .height(44)
+            .width(300)
+            .marginBottom(margin)
+        
         textViews.pin
             .top(view.pin.safeArea)
-            .above(of: fromLabel)
+            .above(of: saveToHistoryButton)
             .left(margin)
             .right(margin)
             .marginBottom(extendedMargin)
@@ -116,18 +141,28 @@ class TranslateViewController: BaseViewController<TranslateViewControllerModel> 
         }
     }
     
+    private func configureSwitcher() {
+        responseLanguageSwitch.isOn = false
+    }
+    
     private func configureTextViews() {
-        inputTextView.text = nil
         inputTextView.backgroundColor = .textViewBackground
         inputTextView.delegate = self
         inputTextView.borderColor = .gray
         inputTextView.borderWidth = 1.0
         
-        translatedTextView.text = nil
         translatedTextView.backgroundColor = .textViewBackground
         translatedTextView.borderColor = .blue
         translatedTextView.borderWidth = 1.0
         translatedTextView.isUserInteractionEnabled = false
+        
+        if let currentTranslation = viewModel.currentTranslation {
+            inputTextView.text = currentTranslation.text
+            translatedTextView.text = currentTranslation.translatedText
+        } else {
+            inputTextView.text = nil
+            translatedTextView.text = nil
+        }
         
         let textViews = UIView()
         textViews.addSubview(inputTextView)
@@ -140,6 +175,12 @@ class TranslateViewController: BaseViewController<TranslateViewControllerModel> 
     private func configurePickers() {
         let originalPickerView = UIPickerView()
         let targetPickerView = UIPickerView()
+        
+        if let currentTranslation = viewModel.currentTranslation {
+            originalLanguageTextField.text = currentTranslation.originalLanguage
+            targetLanguageTextField.text = currentTranslation.targetLanguage
+        }
+        
         configureLanguagePicker(originalPickerView, for: originalLanguageTextField, pickerType: .originalPicker)
         configureLanguagePicker(targetPickerView, for: targetLanguageTextField, pickerType: .targetPicker)
         
@@ -176,6 +217,15 @@ class TranslateViewController: BaseViewController<TranslateViewControllerModel> 
         clearButton.addTarget(self, action: #selector(onClearButtonTapped), for: .touchUpInside)
     }
     
+    private func configureHistoryButton() {
+        let saveToHistoryButton = TUIButton()
+        saveToHistoryButton.setTitle("Save to history", for: .normal)
+        saveToHistoryButton.addTarget(self, action: #selector(onHistorySaveTapped), for: .touchUpInside)
+        view.addSubview(saveToHistoryButton)
+        
+        self.saveToHistoryButton = saveToHistoryButton
+    }
+    
     private func bind() {
         viewModel.languages.asObservable().observeOn(MainScheduler.asyncInstance).subscribe { [weak self] _ in
             self?.originalPickerView?.reloadAllComponents()
@@ -183,7 +233,7 @@ class TranslateViewController: BaseViewController<TranslateViewControllerModel> 
         }.disposed(by: disposeBag)
         
         viewModel.translatedText.asObservable().observeOn(MainScheduler.asyncInstance).subscribe { [weak self] (translatedText) in
-            guard let translatedText = translatedText.element else {
+            guard let translatedText = translatedText.element, !translatedText.isEmpty else {
                 return
             }
             
@@ -191,6 +241,13 @@ class TranslateViewController: BaseViewController<TranslateViewControllerModel> 
             translatedText.forEach() { [weak self] in
                 self?.translatedTextView.text += $0
             }
+        }.disposed(by: disposeBag)
+        
+        viewModel.autoDetectedLanguage.asObservable().observeOn(MainScheduler.asyncInstance).subscribe { [weak self] (language) in
+            guard let language = language.element, !language.isEmpty else {
+                return
+            }
+            self?.originalLanguageTextField.text = language
         }.disposed(by: disposeBag)
     }
     
@@ -226,6 +283,20 @@ class TranslateViewController: BaseViewController<TranslateViewControllerModel> 
         translatedTextView.clear()
     }
     
+    @objc func onHistorySaveTapped() {
+        guard let originalText = inputTextView.text,
+              let targetText = translatedTextView.text,
+              let originalLanguage = originalLanguageTextField.text,
+              let targetLanguage = targetLanguageTextField.text else {
+            return
+        }
+        
+        viewModel.saveTranslationTOHistory(from: originalText,
+                                           to: targetText,
+                                           originalLanguage: originalLanguage,
+                                           targetLanguage: targetLanguage)
+    }
+    
 }
 
 // MARK: UITextViewDelegate
@@ -233,7 +304,14 @@ class TranslateViewController: BaseViewController<TranslateViewControllerModel> 
 extension TranslateViewController: UITextViewDelegate {
     
     func textViewDidChange(_ textView: UITextView) {
-        viewModel.textViewDidChange(textView.text)
+        guard let original = originalLanguageTextField.text, let target = targetLanguageTextField.text else {
+            return
+        }
+        
+        viewModel.textViewDidChange(textView.text,
+                                    from: original,
+                                    to: target,
+                                    autoResponseLanguage: responseLanguageSwitch.isOn)
     }
     
 }
