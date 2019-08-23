@@ -8,12 +8,12 @@
 
 Translator/  
 |-Resources/  
-|-Main/ (AppDelegate, AppCoordinator)
-|-BaseClasses/
-|.|-Router/
-|.|-UIComponents/
-|.|-Other/
-|-Flows/
+|-Main/ (AppDelegate, AppCoordinator)  
+|-BaseClasses/  
+|.|-Router/  
+|.|-UIComponents/  
+|.|-Other/    
+|-Flows/  
 |.|-StartScreenViewController/ (declarative autolayout (Cartography))
 |.|-TranslateViewController/ (manual layout (PinLayout))
 |.|-HistoryViewController/
