@@ -13,15 +13,12 @@ final class DefaultRouter: NSObject, Router {
     // MARK: Variables
     
     let rootController: UINavigationController
-    private var completions: [UIViewController : () -> Void]
     
     // MARK: Life cycle
     
     init(rootController: UINavigationController) {
         rootController.navigationBar.isHidden = false
-        self.rootController = rootController
-        completions = [:]
-    }
+        self.rootController = rootController    }
     
     // MARK: Public
     
@@ -42,9 +39,7 @@ final class DefaultRouter: NSObject, Router {
     }
  
     public func popModule() {
-        if let controller = rootController.popViewController(animated: true) {
-            runCompletion(for: controller)
-        }
+        rootController.popViewController(animated: true)
     }
     
     public func installRootModule(_ module: Presentable?) {
@@ -52,16 +47,6 @@ final class DefaultRouter: NSObject, Router {
             return
         }
         rootController.setViewControllers([controller], animated: false)
-    }
-    
-    // MARK: Private
-    
-    private func runCompletion(for controller: UIViewController) {
-        guard let completion = completions[controller] else {
-            return
-        }
-        completion()
-        completions.removeValue(forKey: controller)
     }
     
 }
